@@ -9,7 +9,7 @@ export default defineComponent({
     const center = ref({ lat: 0, lng: 0 });
     const markers = ref([]);
     const klikmarker = ref([]);
-    const showMarkerForm = ref(false);
+    const selectedMarker = ref(null);
 
     const getCurrentLocation = () => {
       if (markers.value.length > 0) {
@@ -60,8 +60,7 @@ export default defineComponent({
 
       center.value = clickedPosition;
       klikmarker.value = [];
-      // $("#showmarker").hide();
-      showMarkerForm.value = false;
+      $("#showmarker").hide();
     };
 
     const handleMarkerClick = (clickedMarker) => {
@@ -70,35 +69,46 @@ export default defineComponent({
           marker.position.lat === clickedMarker.position.lat &&
           marker.position.lng === clickedMarker.position.lng
       );
-      klikmarker.value.push({
-        notes: clickedMarker.title,
-        showForm: true,
-      });
-      // $("#showmarker").show();
-      showMarkerForm.value = true;
-      // console.log(klikmarker.value);
+
+      // Check if the clicked marker has an ID
+      if (!markers.value[index].id) {
+        // Marker does not have an ID, remove it directly
+        markers.value.splice(index, 1);
+      } else {
+        // Marker has an ID, keep it
+        // klikmarker.value.push({
+        //   notes: clickedMarker.title,
+        //   showForm: true,
+        // });
+
+        selectedMarker.value = {
+          // ...markers.value[index],
+          notes: clickedMarker.title,
+          showForm: true,
+        };
+        $("#showmarker").show();
+      }
     };
 
-    const fetchData = () => {
-      // Lakukan permintaan GET ke API menggunakan AJAX
-      $.ajax({
-        url: "http://api-backend-map-test.test/api/maps",
-        type: "GET",
-        success: function (data) {
-          // Process the data and update the markers
-          markers.value = data.map((map) => ({
-            position: {
-              lat: parseFloat(map.lat), // Convert lat to float
-              lng: parseFloat(map.lng), // Convert lng to float
-            },
-            label: "",
-            title: map.notes,
-          }));
-        },
-        error: function (error) {
-          console.error("Error fetching data:", error);
-        },
-      });
+    const fetchData = async () => {
+      try {
+        const response = await $.ajax({
+          url: "http://api-backend-map-test.test/api/maps",
+          type: "GET",
+        });
+
+        markers.value = response.map((map) => ({
+          position: {
+            lat: parseFloat(map.lat),
+            lng: parseFloat(map.lng),
+          },
+          id: map.id,
+          label: "",
+          title: map.notes,
+        }));
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     };
 
     const saveFormData = () => {
@@ -155,12 +165,42 @@ export default defineComponent({
       // You can do something with the place data if needed
     };
 
-    onMounted(() => {
+    const closeShowMarker = () => {
+      // if (markers.value.length > 0) {
+      //   // Remove the last marker from the array
+      //   markers.value.pop();
+
+      //   // Set showForm to false for the last marker
+      //   markers.value[markers.value.length - 1].showForm = false;
+      // }
+
+      if (markers.value.length > 0) {
+        const lastMarker = markers.value[markers.value.length - 1];
+
+        if (lastMarker.id) {
+          // If the marker has an id, only hide the form
+          lastMarker.showForm = false;
+        } else {
+          // If the marker doesn't have an id, remove it from the array
+          markers.value.pop();
+
+          // Set showForm to false for the new last marker
+          if (markers.value.length > 0) {
+            markers.value[markers.value.length - 1].showForm = false;
+          }
+        }
+      }
+
+      // Hide the showmarker element
+      $("#showmarker").hide();
+    };
+
+    onMounted(async () => {
       fetchData();
       // fetchDataForMarker();
       getCurrentLocation();
       // initAutocomplete();
-      // $("#showmarker").hide();
+      $("#showmarker").hide();
     });
 
     return {
@@ -173,7 +213,8 @@ export default defineComponent({
       klikmarker,
       saveFormData,
       setPlace,
-      showMarkerForm,
+      selectedMarker,
+      closeShowMarker, // Expose selectedMarker
       // initAutocomplete, // Expose initAutocomplete so it can be called later
     };
   },
@@ -203,7 +244,11 @@ export default defineComponent({
       />
       <!-- Menampilkan semua marker dalam array markers -->
       <div class="absolute right-24 top-8">
-        <GMapAutocomplete placeholder="Search" @place_changed="setPlace">
+        <GMapAutocomplete
+          placeholder="Search"
+          @place_changed="setPlace"
+          class="px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
+        >
         </GMapAutocomplete>
       </div>
       <!-- Menampilkan formulir input jika showForm aktif -->
@@ -212,7 +257,7 @@ export default defineComponent({
         class="absolute z-10 inset-1/2 transform translate-x-8 -translate-y-40"
       >
         <!-- Tambahkan kelas bg-white pada div untuk memberikan latar belakang putih -->
-        <div class="bg-white w-72 h-auto rounded-md p-8">
+        <div class="bg-white w-72 h-auto rounded-md p-8 relative">
           <form @submit.prevent="saveFormData">
             <label for="notes">Description:</label>
             <textarea
@@ -228,29 +273,38 @@ export default defineComponent({
               >
                 Save
               </button>
-              <!-- <button
+              <button
                 type="button"
                 class="bg-red-500 text-white py-2 px-4 rounded-md"
               >
                 Delete
-              </button> -->
+              </button>
             </div>
           </form>
+          <div class="absolute top-0 right-1">
+            <button
+              @click="closeShowMarker"
+              class="absolute top-2 right-2 text-red-500 hover:text-red-700 cursor-pointer"
+            >
+              X
+            </button>
+          </div>
         </div>
       </div>
       <div
         id="showmarker"
-        v-if="showMarkerForm && klikmarker.length > 0 && klikmarker[0].showForm"
+        v-if="selectedMarker"
         class="absolute z-10 inset-1/2 transform translate-x-8 -translate-y-40"
         style="display: none"
       >
         <!-- Tambahkan kelas bg-white pada div untuk memberikan latar belakang putih -->
-        <div class="bg-white w-72 h-auto rounded-md p-8">
+        <div class="bg-white w-72 h-auto rounded-md p-8 relative">
           <form @submit.prevent="saveFormData">
             <label for="notes">Description:</label>
-            <h1 id="notes" class="w-full mb-2 p-2 border">
-              {{ klikmarker != "" ? klikmarker[0].notes : "" }}
-            </h1>
+            <textarea id="notes" class="w-full mb-2 p-2 border">
+              {{ selectedMarker.notes }}
+            </textarea>
+            <!-- {{ klikmarker != "" ? klikmarker[0].notes : "" }} -->
 
             <div class="flex gap-4 justify-center">
               <button
@@ -259,14 +313,22 @@ export default defineComponent({
               >
                 Save
               </button>
-              <!-- <button
+              <button
                 type="button"
                 class="bg-red-500 text-white py-2 px-4 rounded-md"
               >
                 Delete
-              </button> -->
+              </button>
             </div>
           </form>
+          <div class="absolute top-0 right-1">
+            <button
+              @click="closeShowMarker"
+              class="absolute top-2 right-2 text-red-500 hover:text-red-700 cursor-pointer"
+            >
+              X
+            </button>
+          </div>
         </div>
       </div>
     </GMapMap>
