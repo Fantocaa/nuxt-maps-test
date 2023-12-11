@@ -20,12 +20,14 @@ export default defineNuxtConfig({
       script: [
         {
         src: "https://code.jquery.com/jquery-3.7.1.js",
-        type: 'text/javascript'
-        
-      }
+        type: 'text/javascript',
+      },
+      // {
+      //   src: "https://maps.googleapis.com/maps/api/js?key=AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ&libraries=places&callback=initAutocomplete&libraries=places&v=weekly",
+      //   type: 'text/javascript',
+      // }
     ]
 
     }
   },
-  
 })

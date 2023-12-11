@@ -9,6 +9,7 @@ export default defineComponent({
     const center = ref({ lat: 0, lng: 0 });
     const markers = ref([]);
     const klikmarker = ref([]);
+    const showMarkerForm = ref(false);
 
     const getCurrentLocation = () => {
       if (markers.value.length > 0) {
@@ -58,8 +59,9 @@ export default defineComponent({
       });
 
       center.value = clickedPosition;
-      klikmarker = [];
-      $("#showmarker").hide();
+      klikmarker.value = [];
+      // $("#showmarker").hide();
+      showMarkerForm.value = false;
     };
 
     const handleMarkerClick = (clickedMarker) => {
@@ -72,8 +74,9 @@ export default defineComponent({
         notes: clickedMarker.title,
         showForm: true,
       });
-      $("#showmarker").show();
-      console.log(klikmarker.value);
+      // $("#showmarker").show();
+      showMarkerForm.value = true;
+      // console.log(klikmarker.value);
     };
 
     const fetchData = () => {
@@ -141,18 +144,23 @@ export default defineComponent({
       }
     };
 
-    // const setPlace = (place) => {
-    //   // Handle place changed event
-    //   console.log("Place set:", place);
-    //   // You can do something with the place data if needed
-    // };
+    const setPlace = (place) => {
+      // Handle place changed event
+      const selectedPosition = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+      };
+      console.log("Place set:", place);
+      center.value = selectedPosition;
+      // You can do something with the place data if needed
+    };
 
     onMounted(() => {
       fetchData();
       // fetchDataForMarker();
       getCurrentLocation();
       // initAutocomplete();
-      $("#showmarker").hide();
+      // $("#showmarker").hide();
     });
 
     return {
@@ -164,7 +172,8 @@ export default defineComponent({
       formInput,
       klikmarker,
       saveFormData,
-      // setPlace,
+      setPlace,
+      showMarkerForm,
       // initAutocomplete, // Expose initAutocomplete so it can be called later
     };
   },
@@ -172,33 +181,32 @@ export default defineComponent({
 </script>
 
 <template>
-  <div class="text-center mx-auto relative h-[1920px]">
+  <div class="text-center mx-auto relative">
     <!-- <div class="absolute z-10 pt-8">
       <h1 class="text-2xl font-semibold pb-2 text-center">Your Coordinate :</h1>
       <p>{{ center.lat }} Latitude, {{ center.lng }} Longitude</p>
     </div> -->
-    <GoogleMap
+    <GMapMap
       api-key="AIzaSyBLtF9LaqalS-VgqvjA8o8Jiwg24xRt9zA"
       id="google-map"
       style="width: 100%; height: 100vh"
       :center="center"
-      :zoom="5"
+      :zoom="7"
       @click="handleMapClick"
     >
-      <!-- Menampilkan semua marker dalam array markers -->
-      <Marker
+      <GMapMarker
+        :clickable="true"
         v-for="marker in markers"
         :key="marker.position.lat + marker.position.lng"
         :options="marker"
         @click="() => handleMarkerClick(marker)"
       />
-      <!-- @load="initAutocomplete" -->
+      <!-- Menampilkan semua marker dalam array markers -->
+      <div class="absolute right-24 top-8">
+        <GMapAutocomplete placeholder="Search" @place_changed="setPlace">
+        </GMapAutocomplete>
+      </div>
       <!-- Menampilkan formulir input jika showForm aktif -->
-      <!-- <GMapAutocomplete
-        placeholder="This is a placeholder"
-        @place_changed="setPlace"
-      >
-      </GMapAutocomplete> -->
       <div
         v-if="markers.length && markers[markers.length - 1].showForm"
         class="absolute z-10 inset-1/2 transform translate-x-8 -translate-y-40"
@@ -220,18 +228,19 @@ export default defineComponent({
               >
                 Save
               </button>
-              <button
+              <!-- <button
                 type="button"
                 class="bg-red-500 text-white py-2 px-4 rounded-md"
               >
                 Delete
-              </button>
+              </button> -->
             </div>
           </form>
         </div>
       </div>
       <div
         id="showmarker"
+        v-if="showMarkerForm && klikmarker.length > 0 && klikmarker[0].showForm"
         class="absolute z-10 inset-1/2 transform translate-x-8 -translate-y-40"
         style="display: none"
       >
@@ -239,9 +248,9 @@ export default defineComponent({
         <div class="bg-white w-72 h-auto rounded-md p-8">
           <form @submit.prevent="saveFormData">
             <label for="notes">Description:</label>
-            <textarea id="notes" class="w-full mb-2 p-2 border">{{
-              klikmarker != "" ? klikmarker[0].notes : ""
-            }}</textarea>
+            <h1 id="notes" class="w-full mb-2 p-2 border">
+              {{ klikmarker != "" ? klikmarker[0].notes : "" }}
+            </h1>
 
             <div class="flex gap-4 justify-center">
               <button
@@ -250,16 +259,16 @@ export default defineComponent({
               >
                 Save
               </button>
-              <button
+              <!-- <button
                 type="button"
                 class="bg-red-500 text-white py-2 px-4 rounded-md"
               >
                 Delete
-              </button>
+              </button> -->
             </div>
           </form>
         </div>
       </div>
-    </GoogleMap>
+    </GMapMap>
   </div>
 </template>

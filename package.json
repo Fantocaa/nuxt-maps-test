@@ -19,6 +19,8 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
+    "@fawmi/vue-google-maps": "^0.9.67",
+    "@googlemaps/js-api-loader": "^1.16.2",
     "jquery": "^3.7.1",
     "pdf-lib": "^1.17.1",
     "vue-browser-geolocation": "^1.8.0",
