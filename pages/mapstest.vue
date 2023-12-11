@@ -1,10 +1,10 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import { GoogleMap, Marker } from "vue3-google-map";
-// import $ from "jquery"; // Import jQuery
 
 export default defineComponent({
   components: { GoogleMap, Marker },
+  // emits: ["tilt_changed"], // Declare the necessary events here
   setup() {
     const center = ref({ lat: 0, lng: 0 });
     const markers = ref([]);
@@ -75,15 +75,9 @@ export default defineComponent({
         // Marker does not have an ID, remove it directly
         markers.value.splice(index, 1);
       } else {
-        // Marker has an ID, keep it
-        // klikmarker.value.push({
-        //   notes: clickedMarker.title,
-        //   showForm: true,
-        // });
-
         selectedMarker.value = {
-          // ...markers.value[index],
-          notes: clickedMarker.title,
+          id: markers.value[index].id, // Add the id property
+          notes: clickedMarker.notes,
           showForm: true,
         };
         $("#showmarker").show();
@@ -104,7 +98,7 @@ export default defineComponent({
           },
           id: map.id,
           label: "",
-          title: map.notes,
+          notes: map.notes,
         }));
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -154,13 +148,103 @@ export default defineComponent({
       }
     };
 
+    const editSaveFormData = async () => {
+      try {
+        if (markers.value.length > 0) {
+          const lastMarker = markers.value[markers.value.length - 1];
+
+          if (
+            lastMarker.position &&
+            lastMarker.position.lat &&
+            lastMarker.position.lng
+          ) {
+            const formData = {
+              notes: formInput.value.notes,
+              lat: lastMarker.position.lat,
+              lng: lastMarker.position.lng,
+            };
+
+            const response = await fetch(
+              "http://api-backend-map-test.test/api/maps/edit",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              alert("Data saved:", data);
+
+              markers.value[markers.value.length - 1].showForm = false;
+              formInput.value = {
+                notes: "",
+                lat: "",
+                lng: "",
+              };
+            } else {
+              console.error(
+                "Error saving data. Server returned:",
+                response.status
+              );
+            }
+          } else {
+            console.error("Error: Marker position data is incomplete");
+          }
+        } else {
+          console.error("Error: No markers available to save");
+        }
+      } catch (error) {
+        console.error("Error saving data:", error);
+      }
+    };
+
+    const deleteSaveFormData = async () => {
+      try {
+        if (selectedMarker.value && selectedMarker.value.id) {
+          const response = await fetch(
+            `http://api-backend-map-test.test/api/maps/delete/${selectedMarker.value.id}`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            alert("Data deleted:", data);
+
+            // Remove the marker from the markers array
+            const index = markers.value.findIndex(
+              (marker) => marker.id === selectedMarker.value.id
+            );
+            markers.value.splice(index, 1);
+
+            // Hide the showmarker element
+            $("#showmarker").hide();
+          } else {
+            console.error(
+              "Error deleting data. Server returned:",
+              response.status
+            );
+          }
+        } else {
+          console.error("Error: No marker selected for deletion");
+        }
+      } catch (error) {
+        console.error("Error deleting data:", error);
+      }
+    };
+
     const setPlace = (place) => {
       // Handle place changed event
       const selectedPosition = {
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng(),
       };
-      console.log("Place set:", place);
+      // console.log("Place set:", place);
       center.value = selectedPosition;
       // You can do something with the place data if needed
     };
@@ -212,10 +296,11 @@ export default defineComponent({
       formInput,
       klikmarker,
       saveFormData,
+      editSaveFormData,
       setPlace,
       selectedMarker,
+      deleteSaveFormData,
       closeShowMarker, // Expose selectedMarker
-      // initAutocomplete, // Expose initAutocomplete so it can be called later
     };
   },
 });
@@ -299,11 +384,16 @@ export default defineComponent({
       >
         <!-- Tambahkan kelas bg-white pada div untuk memberikan latar belakang putih -->
         <div class="bg-white w-72 h-auto rounded-md p-8 relative">
-          <form @submit.prevent="saveFormData">
+          <form @submit.prevent="editSaveFormData">
             <label for="notes">Description:</label>
-            <textarea id="notes" class="w-full mb-2 p-2 border">
-              {{ selectedMarker.notes }}
-            </textarea>
+            <!-- v-model="formInput.notes" -->
+            <textarea
+              v-if="selectedMarker"
+              id="notes"
+              class="w-full mb-2 p-2 border"
+              >{{ selectedMarker.notes }}</textarea
+            >
+
             <!-- {{ klikmarker != "" ? klikmarker[0].notes : "" }} -->
 
             <div class="flex gap-4 justify-center">
@@ -313,13 +403,14 @@ export default defineComponent({
               >
                 Save
               </button>
-              <button
-                type="button"
-                class="bg-red-500 text-white py-2 px-4 rounded-md"
-              >
-                Delete
-              </button>
             </div>
+            <button
+              @click="deleteSaveFormData"
+              type="button"
+              class="bg-red-500 text-white py-2 px-4 rounded-md"
+            >
+              Delete
+            </button>
           </form>
           <div class="absolute top-0 right-1">
             <button
