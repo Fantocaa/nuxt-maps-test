@@ -82,6 +82,7 @@ export default defineComponent({
         };
         $("#showmarker").show();
       }
+      console.log(selectedMarker.value);
     };
 
     const fetchData = async () => {
@@ -148,93 +149,59 @@ export default defineComponent({
       }
     };
 
-    const editSaveFormData = async () => {
-      try {
-        if (markers.value.length > 0) {
-          const lastMarker = markers.value[markers.value.length - 1];
+    const editSaveFormData = () => {
+      if (selectedMarker.value && selectedMarker.value.id) {
+        const formData = {
+          notes: formInput.value.notes,
+          // lat: selectedMarker.value.position.lat,
+          // lng: selectedMarker.value.position.lng,
 
-          if (
-            lastMarker.position &&
-            lastMarker.position.lat &&
-            lastMarker.position.lng
-          ) {
-            const formData = {
-              notes: formInput.value.notes,
-              lat: lastMarker.position.lat,
-              lng: lastMarker.position.lng,
-            };
+          lat: selectedMarker.value.position
+            ? selectedMarker.value.position.lat
+            : null,
+          lng: selectedMarker.value.position
+            ? selectedMarker.value.position.lng
+            : null,
+        };
 
-            const response = await fetch(
-              "http://api-backend-map-test.test/api/maps/edit",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
-              }
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              alert("Data saved:", data);
-
-              markers.value[markers.value.length - 1].showForm = false;
-              formInput.value = {
-                notes: "",
-                lat: "",
-                lng: "",
-              };
-            } else {
-              console.error(
-                "Error saving data. Server returned:",
-                response.status
-              );
-            }
-          } else {
-            console.error("Error: Marker position data is incomplete");
-          }
-        } else {
-          console.error("Error: No markers available to save");
-        }
-      } catch (error) {
-        console.error("Error saving data:", error);
+        $.ajax({
+          url: `http://api-backend-map-test.test/api/maps/edit/${selectedMarker.value.id}`,
+          type: "PUT",
+          contentType: "application/json",
+          data: JSON.stringify(formData),
+          success: function (data) {
+            alert("Data saved:", data);
+            selectedMarker.value.notes = formInput.value.notes;
+            $("#showmarker").hide();
+          },
+          error: function (error) {
+            console.error("Error saving data:", error);
+          },
+        });
+      } else {
+        console.error("Error: No marker selected for editing");
       }
     };
 
-    const deleteSaveFormData = async () => {
-      try {
-        if (selectedMarker.value && selectedMarker.value.id) {
-          const response = await fetch(
-            `http://api-backend-map-test.test/api/maps/delete/${selectedMarker.value.id}`,
-            {
-              method: "DELETE",
-            }
-          );
-
-          if (response.ok) {
-            const data = await response.json();
+    const deleteSaveFormData = () => {
+      if (selectedMarker.value && selectedMarker.value.id) {
+        $.ajax({
+          url: `http://api-backend-map-test.test/api/maps/delete/${selectedMarker.value.id}`,
+          type: "DELETE",
+          success: function (data) {
             alert("Data deleted:", data);
-
-            // Remove the marker from the markers array
             const index = markers.value.findIndex(
               (marker) => marker.id === selectedMarker.value.id
             );
             markers.value.splice(index, 1);
-
-            // Hide the showmarker element
             $("#showmarker").hide();
-          } else {
-            console.error(
-              "Error deleting data. Server returned:",
-              response.status
-            );
-          }
-        } else {
-          console.error("Error: No marker selected for deletion");
-        }
-      } catch (error) {
-        console.error("Error deleting data:", error);
+          },
+          error: function (error) {
+            console.error("Error deleting data:", error);
+          },
+        });
+      } else {
+        console.error("Error: No marker selected for deletion");
       }
     };
 
@@ -358,12 +325,12 @@ export default defineComponent({
               >
                 Save
               </button>
-              <button
+              <!-- <button
                 type="button"
                 class="bg-red-500 text-white py-2 px-4 rounded-md"
               >
                 Delete
-              </button>
+              </button> -->
             </div>
           </form>
           <div class="absolute top-0 right-1">
@@ -386,15 +353,11 @@ export default defineComponent({
         <div class="bg-white w-72 h-auto rounded-md p-8 relative">
           <form @submit.prevent="editSaveFormData">
             <label for="notes">Description:</label>
-            <!-- v-model="formInput.notes" -->
-            <textarea
-              v-if="selectedMarker"
-              id="notes"
-              class="w-full mb-2 p-2 border"
-              >{{ selectedMarker.notes }}</textarea
-            >
 
-            <!-- {{ klikmarker != "" ? klikmarker[0].notes : "" }} -->
+            <!-- v-model="formInput.notes" -->
+            <textarea id="notes" class="w-full mb-2 p-2 border">{{
+              selectedMarker.notes
+            }}</textarea>
 
             <div class="flex gap-4 justify-center">
               <button
