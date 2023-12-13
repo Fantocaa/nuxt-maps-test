@@ -1,10 +1,9 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
-import { GoogleMap, Marker } from "vue3-google-map";
+import { Marker } from "vue3-google-map";
 
 export default defineComponent({
-  components: { GoogleMap, Marker },
-  // emits: ["tilt_changed"], // Declare the necessary events here
+  components: { Marker },
   setup() {
     const center = ref({ lat: 0, lng: 0 });
     const markers = ref([]);
@@ -132,7 +131,7 @@ export default defineComponent({
             contentType: "application/json",
             data: JSON.stringify(formData),
             success: function (data) {
-              alert("Data saved:", data);
+              alert("Data saved : Success", data);
 
               markers.value[markers.value.length - 1].showForm = false;
               formInput.value = {
@@ -166,7 +165,7 @@ export default defineComponent({
           contentType: "application/json",
           data: JSON.stringify(formData),
           success: function (data) {
-            alert("Data saved:", data);
+            alert("Data saved : Success", data);
             // Update the notes of the selectedMarker directly
             selectedMarker.value.notes = formInput.notes;
             $("#showmarker").hide();
@@ -187,12 +186,13 @@ export default defineComponent({
           url: `http://api-backend-map-test.test/api/maps/delete/${selectedMarker.value.id}`,
           type: "DELETE",
           success: function (data) {
-            alert("Data deleted:", data);
+            alert("Data deleted : Success", data);
             const index = markers.value.findIndex(
               (marker) => marker.id === selectedMarker.value.id
             );
             markers.value.splice(index, 1);
             $("#showmarker").hide();
+            fetchData();
           },
           error: function (error) {
             console.error("Error deleting data:", error);
@@ -283,11 +283,11 @@ export default defineComponent({
         @click="() => handleMarkerClick(marker)"
       />
       <!-- Menampilkan semua marker dalam array markers -->
-      <div class="absolute right-24 top-8">
+      <div class="absolute right-16 top-[9px]">
         <GMapAutocomplete
           placeholder="Search"
           @place_changed="setPlace"
-          class="px-4 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
+          class="px-4 py-2 w-96 border rounded-md focus:outline-none focus:ring focus:border-blue-300 shadow-sm"
         >
         </GMapAutocomplete>
       </div>
@@ -302,7 +302,7 @@ export default defineComponent({
             <textarea
               v-model="formInput.notes"
               id="notes"
-              class="w-full mb-2 p-2 border"
+              class="w-full mb-2 p-2 border focus:outline-none focus:ring focus:border-blue-300"
             ></textarea>
 
             <div class="flex gap-4 justify-center">
@@ -335,17 +335,9 @@ export default defineComponent({
           <form @submit.prevent="editSaveFormData">
             <label for="notes">Description:</label>
 
-            <!-- v-model="formInput.notes" -->
             <textarea id="notes" class="w-full mb-2 p-2 border"
               >{{ selectedMarker ? selectedMarker.notes : "" }} </textarea
             >
-
-            <!-- <textarea
-              v-model="formInput.notes"
-              id="notes"
-              class="w-full mb-2 p-2 border"
-              >{{ selectedMarker.notes }}</textarea
-            > -->
 
             <div class="flex gap-4 justify-center">
               <button

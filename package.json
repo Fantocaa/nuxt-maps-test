@@ -13,6 +13,8 @@
     "@nuxt/devtools": "latest",
     "@nuxtjs/eslint-module": "^4.1.0",
     "@nuxtjs/tailwindcss": "^6.10.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-typescript": "^11.1.5",
     "eslint": "^8.55.0",
     "nuxt": "^3.8.2",
     "vue": "^3.3.10",
@@ -21,9 +23,13 @@
   "dependencies": {
     "@fawmi/vue-google-maps": "^0.9.67",
     "@googlemaps/js-api-loader": "^1.16.2",
+    "@jridgewell/sourcemap-codec": "^1.4.15",
+    "@rollup/plugin-inject": "^5.0.5",
     "axios": "^1.6.2",
     "jquery": "^3.7.1",
     "pdf-lib": "^1.17.1",
+    "rollup-plugin-inject": "^3.0.2",
+    "rollup-plugin-vue": "^6.0.0",
     "vue-browser-geolocation": "^1.8.0",
     "vue3-google-map": "^0.18.0"
   }

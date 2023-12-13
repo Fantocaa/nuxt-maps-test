@@ -2,6 +2,7 @@
 
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  
   modules: [
     '@nuxtjs/tailwindcss',
   ],
@@ -30,4 +31,9 @@ export default defineNuxtConfig({
 
     }
   },
+  build: {
+    // extractCSS: true,
+    transpile: ['swiper', 'shipit-cli', '@fawmi/vue-google-maps', '@googlemaps/markerclusterer']
+  }
+  
 })
