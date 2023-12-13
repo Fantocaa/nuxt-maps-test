@@ -63,6 +63,7 @@ export default defineComponent({
       $("#showmarker").hide();
     };
 
+    // setTimeout(() => {
     const handleMarkerClick = (clickedMarker) => {
       const index = markers.value.findIndex(
         (marker) =>
@@ -84,6 +85,7 @@ export default defineComponent({
       }
       console.log(selectedMarker.value);
     };
+    // }, 4000);
 
     const fetchData = async () => {
       try {
@@ -136,6 +138,7 @@ export default defineComponent({
               formInput.value = {
                 notes: "",
               };
+              fetchData();
             },
             error: function (error) {
               console.error("Error saving data:", error);
@@ -150,29 +153,24 @@ export default defineComponent({
     };
 
     const editSaveFormData = () => {
+      var no = $("#notes").val();
       if (selectedMarker.value && selectedMarker.value.id) {
         const formData = {
-          notes: formInput.value.notes,
-          // lat: selectedMarker.value.position.lat,
-          // lng: selectedMarker.value.position.lng,
-
-          lat: selectedMarker.value.position
-            ? selectedMarker.value.position.lat
-            : null,
-          lng: selectedMarker.value.position
-            ? selectedMarker.value.position.lng
-            : null,
+          notes: no,
         };
+        console.log("formInput:", formInput.value); // Log formInput to the console
 
         $.ajax({
           url: `http://api-backend-map-test.test/api/maps/edit/${selectedMarker.value.id}`,
-          type: "PUT",
+          type: "POST",
           contentType: "application/json",
           data: JSON.stringify(formData),
           success: function (data) {
             alert("Data saved:", data);
-            selectedMarker.value.notes = formInput.value.notes;
+            // Update the notes of the selectedMarker directly
+            selectedMarker.value.notes = formInput.notes;
             $("#showmarker").hide();
+            fetchData();
           },
           error: function (error) {
             console.error("Error saving data:", error);
@@ -217,14 +215,6 @@ export default defineComponent({
     };
 
     const closeShowMarker = () => {
-      // if (markers.value.length > 0) {
-      //   // Remove the last marker from the array
-      //   markers.value.pop();
-
-      //   // Set showForm to false for the last marker
-      //   markers.value[markers.value.length - 1].showForm = false;
-      // }
-
       if (markers.value.length > 0) {
         const lastMarker = markers.value[markers.value.length - 1];
 
@@ -248,26 +238,24 @@ export default defineComponent({
 
     onMounted(async () => {
       fetchData();
-      // fetchDataForMarker();
       getCurrentLocation();
-      // initAutocomplete();
-      $("#showmarker").hide();
+      // handleMarkerClick();
+      // $("#showmarker").hide();
     });
 
     return {
       center,
       markers,
-      // input, // Provide the reference to the input element
-      handleMapClick,
-      handleMarkerClick,
+      setPlace,
       formInput,
       klikmarker,
       saveFormData,
-      editSaveFormData,
-      setPlace,
-      selectedMarker,
+      handleMapClick,
+      handleMarkerClick,
       deleteSaveFormData,
-      closeShowMarker, // Expose selectedMarker
+      editSaveFormData,
+      closeShowMarker,
+      selectedMarker,
     };
   },
 });
@@ -303,7 +291,6 @@ export default defineComponent({
         >
         </GMapAutocomplete>
       </div>
-      <!-- Menampilkan formulir input jika showForm aktif -->
       <div
         v-if="markers.length && markers[markers.length - 1].showForm"
         class="absolute z-10 inset-1/2 transform translate-x-8 -translate-y-40"
@@ -325,12 +312,6 @@ export default defineComponent({
               >
                 Save
               </button>
-              <!-- <button
-                type="button"
-                class="bg-red-500 text-white py-2 px-4 rounded-md"
-              >
-                Delete
-              </button> -->
             </div>
           </form>
           <div class="absolute top-0 right-1">
@@ -343,21 +324,28 @@ export default defineComponent({
           </div>
         </div>
       </div>
+      <!-- v-if="selectedMarker" -->
       <div
         id="showmarker"
-        v-if="selectedMarker"
+        :data-id="selectedMarker ? selectedMarker.id : ''"
         class="absolute z-10 inset-1/2 transform translate-x-8 -translate-y-40"
         style="display: none"
       >
-        <!-- Tambahkan kelas bg-white pada div untuk memberikan latar belakang putih -->
         <div class="bg-white w-72 h-auto rounded-md p-8 relative">
           <form @submit.prevent="editSaveFormData">
             <label for="notes">Description:</label>
 
             <!-- v-model="formInput.notes" -->
-            <textarea id="notes" class="w-full mb-2 p-2 border">{{
-              selectedMarker.notes
-            }}</textarea>
+            <textarea id="notes" class="w-full mb-2 p-2 border"
+              >{{ selectedMarker ? selectedMarker.notes : "" }} </textarea
+            >
+
+            <!-- <textarea
+              v-model="formInput.notes"
+              id="notes"
+              class="w-full mb-2 p-2 border"
+              >{{ selectedMarker.notes }}</textarea
+            > -->
 
             <div class="flex gap-4 justify-center">
               <button
