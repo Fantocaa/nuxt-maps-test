@@ -1,6 +1,7 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import { Marker } from "vue3-google-map";
+import { Axios } from "axios";
 
 export default defineComponent({
   components: { Marker },
@@ -62,7 +63,6 @@ export default defineComponent({
       $("#showmarker").hide();
     };
 
-    // setTimeout(() => {
     const handleMarkerClick = (clickedMarker) => {
       const index = markers.value.findIndex(
         (marker) =>
@@ -84,16 +84,15 @@ export default defineComponent({
       }
       console.log(selectedMarker.value);
     };
-    // }, 4000);
 
     const fetchData = async () => {
       try {
-        const response = await $.ajax({
-          url: "http://api-backend-map-test.test/api/maps",
-          type: "GET",
-        });
+        const response = await fetch(
+          "http://api-backend-map-test.test/api/maps"
+        );
+        const data = await response.json();
 
-        markers.value = response.map((map) => ({
+        markers.value = data.map((map) => ({
           position: {
             lat: parseFloat(map.lat),
             lng: parseFloat(map.lng),
@@ -203,14 +202,24 @@ export default defineComponent({
       }
     };
 
+    const zoom = ref(7); // Atur level zoom awal
+
     const setPlace = (place) => {
       // Handle place changed event
       const selectedPosition = {
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng(),
       };
+
+      markers.value.push({
+        position: selectedPosition,
+        label: "",
+        title: "New Marker",
+        // showForm: true,
+      });
       // console.log("Place set:", place);
       center.value = selectedPosition;
+      zoom.value = 16; // Atur level zoom yang diinginkan
       // You can do something with the place data if needed
     };
 
@@ -244,6 +253,7 @@ export default defineComponent({
     });
 
     return {
+      zoom,
       center,
       markers,
       setPlace,
@@ -272,7 +282,7 @@ export default defineComponent({
       id="google-map"
       style="width: 100%; height: 100vh"
       :center="center"
-      :zoom="7"
+      :zoom="zoom"
       @click="handleMapClick"
     >
       <GMapMarker
@@ -346,14 +356,14 @@ export default defineComponent({
               >
                 Save
               </button>
+              <button
+                @click="deleteSaveFormData"
+                type="button"
+                class="bg-red-500 text-white py-2 px-4 rounded-md"
+              >
+                Delete
+              </button>
             </div>
-            <button
-              @click="deleteSaveFormData"
-              type="button"
-              class="bg-red-500 text-white py-2 px-4 rounded-md"
-            >
-              Delete
-            </button>
           </form>
           <div class="absolute top-0 right-1">
             <button
