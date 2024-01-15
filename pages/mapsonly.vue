@@ -2,14 +2,17 @@
 import { defineComponent, ref, onMounted } from "vue";
 import { Marker } from "vue3-google-map";
 import { Axios } from "axios";
+import user from "~/components/user.vue";
 
 export default defineComponent({
+  emits: ["position_changed", "tilt_changed"],
   components: { Marker },
   setup() {
     const center = ref({ lat: 0, lng: 0 });
     const markers = ref([]);
     const klikmarker = ref([]);
     const selectedMarker = ref(null);
+    const mapInstance = ref(null); // Ref to store the map instance
 
     const getCurrentLocation = () => {
       if (markers.value.length > 0) {
@@ -63,6 +66,10 @@ export default defineComponent({
       $("#showmarker").hide();
     };
 
+    const mapWasMounted = (_map) => {
+      mapInstance.value = _map;
+    };
+
     const handleMarkerClick = (clickedMarker) => {
       const index = markers.value.findIndex(
         (marker) =>
@@ -82,7 +89,15 @@ export default defineComponent({
         };
         $("#showmarker").show();
       }
-      console.log(selectedMarker.value);
+
+      // zoom.value = 16;
+      center.value = clickedMarker.position;
+
+      // Manually update the map
+      if (mapInstance.value) {
+        mapInstance.value.setZoom(zoom.value);
+        mapInstance.value.setCenter(center.value);
+      }
     };
 
     const fetchData = async () => {
@@ -103,102 +118,6 @@ export default defineComponent({
         }));
       } catch (error) {
         console.error("Error fetching data:", error);
-      }
-    };
-
-    const saveFormData = () => {
-      // lat: markers.value[markers.value.length - 1].position.lat,
-      // lng: markers.value[markers.value.length - 1].position.lng,
-      if (markers.value.length > 0) {
-        const lastMarker = markers.value[markers.value.length - 1];
-
-        if (
-          lastMarker.position &&
-          lastMarker.position.lat &&
-          lastMarker.position.lng
-        ) {
-          const formData = {
-            notes: formInput.value.notes,
-            lat: lastMarker.position.lat,
-            lng: lastMarker.position.lng,
-          };
-
-          // Menggunakan Ajax jQuery untuk mengirim data
-          $.ajax({
-            url: "http://api-backend-map-test.test/api/maps",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(formData),
-            success: function (data) {
-              alert("Data saved : Success", data);
-
-              markers.value[markers.value.length - 1].showForm = false;
-              formInput.value = {
-                notes: "",
-              };
-              fetchData();
-            },
-            error: function (error) {
-              console.error("Error saving data:", error);
-            },
-          });
-        } else {
-          console.error("Error: Marker position data is incomplete");
-        }
-      } else {
-        console.error("Error: No markers available to save");
-      }
-    };
-
-    const editSaveFormData = () => {
-      var no = $("#notes").val();
-      if (selectedMarker.value && selectedMarker.value.id) {
-        const formData = {
-          notes: no,
-        };
-        console.log("formInput:", formInput.value); // Log formInput to the console
-
-        $.ajax({
-          url: `http://api-backend-map-test.test/api/maps/edit/${selectedMarker.value.id}`,
-          type: "POST",
-          contentType: "application/json",
-          data: JSON.stringify(formData),
-          success: function (data) {
-            alert("Data saved : Success", data);
-            // Update the notes of the selectedMarker directly
-            selectedMarker.value.notes = formInput.notes;
-            $("#showmarker").hide();
-            fetchData();
-          },
-          error: function (error) {
-            console.error("Error saving data:", error);
-          },
-        });
-      } else {
-        console.error("Error: No marker selected for editing");
-      }
-    };
-
-    const deleteSaveFormData = () => {
-      if (selectedMarker.value && selectedMarker.value.id) {
-        $.ajax({
-          url: `http://api-backend-map-test.test/api/maps/delete/${selectedMarker.value.id}`,
-          type: "DELETE",
-          success: function (data) {
-            alert("Data deleted : Success", data);
-            const index = markers.value.findIndex(
-              (marker) => marker.id === selectedMarker.value.id
-            );
-            markers.value.splice(index, 1);
-            $("#showmarker").hide();
-            fetchData();
-          },
-          error: function (error) {
-            console.error("Error deleting data:", error);
-          },
-        });
-      } else {
-        console.error("Error: No marker selected for deletion");
       }
     };
 
@@ -259,11 +178,9 @@ export default defineComponent({
       setPlace,
       formInput,
       klikmarker,
-      saveFormData,
+      mapWasMounted,
       handleMapClick,
       handleMarkerClick,
-      deleteSaveFormData,
-      editSaveFormData,
       closeShowMarker,
       selectedMarker,
     };
@@ -273,16 +190,18 @@ export default defineComponent({
 
 <template>
   <div class="text-center mx-auto relative">
+    <!-- <user /> -->
     <!-- <div class="absolute z-10 pt-8">
       <h1 class="text-2xl font-semibold pb-2 text-center">Your Coordinate :</h1>
       <p>{{ center.lat }} Latitude, {{ center.lng }} Longitude</p>
     </div> -->
     <GMapMap
-      api-key="AIzaSyBLtF9LaqalS-VgqvjA8o8Jiwg24xRt9zA"
+      api-key="AIzaSyD2dASx5Zo68GSyZuPjUs-4SBLYGsn4OPQ"
       id="google-map"
       style="width: 100%; height: 100vh"
       :center="center"
       :zoom="zoom"
+      @load="mapWasMounted"
       @click="handleMapClick"
     >
       <GMapMarker
@@ -297,7 +216,7 @@ export default defineComponent({
         <GMapAutocomplete
           placeholder="Search"
           @place_changed="setPlace"
-          class="px-4 py-2 w-96 border rounded-md focus:outline-none focus:ring focus:border-blue-300 shadow-sm"
+          class="px-4 py-2 w-[512px] border rounded-md focus:outline-none focus:ring focus:border-blue-300 shadow-sm"
         >
         </GMapAutocomplete>
       </div>

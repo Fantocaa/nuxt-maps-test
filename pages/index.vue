@@ -1,14 +1,17 @@
-<script setup lang="ts">
-import maps from "../components/maps.vue";
-import mapstest from "./mapstest.vue";
-
-const route = useRoute();
-</script>
+<script lang="ts" setup></script>
 
 <template>
+  <!-- <form @submit.prevent="handleLogin">
+    <label for=""></label>
+  </form> -->
   <div>
-    <!-- <maps /> -->
-    <mapstest />
-    <!-- <searchboxVue /> -->
+    <ul>
+      <li>
+        <NuxtLink to="/">Home</NuxtLink>
+      </li>
+      <li>
+        <NuxtLink to="/login">Login</NuxtLink>
+      </li>
+    </ul>
   </div>
 </template>
